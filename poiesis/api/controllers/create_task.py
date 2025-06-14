@@ -15,6 +15,9 @@ from kubernetes.client.models import (
     V1ObjectMeta,
     V1PodSpec,
     V1PodTemplateSpec,
+    V1SecurityContext,
+    V1SeccompProfile,
+    V1Capabilities,
 )
 
 from poiesis.api.constants import get_poiesis_api_constants
@@ -103,6 +106,13 @@ class CreateTaskController(InterfaceController):
                 template=V1PodTemplateSpec(
                     spec=V1PodSpec(
                         service_account_name=core_constants.K8s.SERVICE_ACCOUNT_NAME,
+                        security_context=V1SecurityContext(
+                                fs_group_change_policy="OnRootMismatch",
+                                run_as_non_root=True,
+                                seccomp_profile=V1SeccompProfile(
+                                        type="RuntimeDefault"
+                                ),
+                        ),
                         containers=[
                             V1Container(
                                 name=core_constants.K8s.TORC_PREFIX,
@@ -173,6 +183,13 @@ class CreateTaskController(InterfaceController):
                                         ),
                                     ),
                                 ],
+                                security_context=V1SecurityContext(
+                                        run_as_user=1000,
+                                        allow_privilege_escalation=False,
+                                        capabilities=V1Capabilities(
+                                                drop=["ALL"]
+                                        ),
+                                ),
                                 image_pull_policy=core_constants.K8s.IMAGE_PULL_POLICY,
                             ),
                         ],

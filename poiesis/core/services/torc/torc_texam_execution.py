@@ -13,6 +13,9 @@ from kubernetes.client import (
     V1ObjectMeta,
     V1PodSpec,
     V1PodTemplateSpec,
+    V1SecurityContext,
+    V1SeccompProfile,
+    V1Capabilities,
 )
 from kubernetes.client.exceptions import ApiException
 
@@ -94,6 +97,13 @@ class TorcTexamExecution(TorcExecutionTemplate):
             spec=V1JobSpec(
                 template=V1PodTemplateSpec(
                     spec=V1PodSpec(
+                        security_context=V1SecurityContext(  # Pod Security Context
+                            fs_group_change_policy="OnRootMismatch",
+                            run_as_non_root=True,
+                            seccomp_profile=V1SeccompProfile(
+                                type="RuntimeDefault"
+                            ),
+                        ),
                         service_account_name=core_constants.K8s.SERVICE_ACCOUNT_NAME,
                         containers=[
                             V1Container(
@@ -179,6 +189,13 @@ class TorcTexamExecution(TorcExecutionTemplate):
                                         ),
                                     ),
                                 ],
+                                security_context=V1SecurityContext(  # Container Security Context
+                                    run_as_user=1000,
+                                    allow_privilege_escalation=False,
+                                    capabilities=V1Capabilities(
+                                        drop=["ALL"]
+                                    ),
+                                ),
                             )
                         ],
                         restart_policy=core_constants.K8s.RESTART_POLICY,

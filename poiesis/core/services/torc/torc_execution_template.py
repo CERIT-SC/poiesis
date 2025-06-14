@@ -16,6 +16,9 @@ from kubernetes.client import (
     V1PodTemplateSpec,
     V1Volume,
     V1VolumeMount,
+    V1SecurityContext, 
+    V1SeccompProfile, 
+    V1Capabilities,
 )
 from kubernetes.client.exceptions import ApiException
 
@@ -104,6 +107,13 @@ class TorcExecutionTemplate(ABC):
                 backoff_limit=int(core_constants.K8s.BACKOFF_LIMIT),
                 template=V1PodTemplateSpec(
                     spec=V1PodSpec(
+                        security_context=V1SecurityContext(  # Pod Security Context
+                            fs_group_change_policy="OnRootMismatch",
+                            run_as_non_root=True,
+                            seccomp_profile=V1SeccompProfile(
+                                type="RuntimeDefault"
+                            ),
+                        ),
                         containers=[
                             V1Container(
                                 name=job_name,
@@ -130,6 +140,13 @@ class TorcExecutionTemplate(ABC):
                                         ),
                                     ),
                                 ],
+                                security_context=V1SecurityContext(  # Container Security Context
+                                    run_as_user=1000,
+                                    allow_privilege_escalation=False,
+                                    capabilities=V1Capabilities(
+                                        drop=["ALL"]
+                                    ),
+                                ),
                                 volume_mounts=[
                                     V1VolumeMount(
                                         name=core_constants.K8s.COMMON_PVC_VOLUME_NAME,
